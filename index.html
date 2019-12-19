@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Map</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" type="text/css" media="screen" href="css/main.css" />
+  <link rel="stylesheet" type="text/css" media="screen" href="css/bootstrap.css" />
+  <script src="https://api-maps.yandex.ru/2.1/?apikey=0f289aa1-d773-4ef1-b114-24d28f0d1634&lang=ru_RU" type="text/javascript">
+  </script>
+  <script src="js/main.js"></script>
+</head>
+<body>
+  <div class="container">
+    <div class="params">
+      <label for="radius">Радиус выброса, м.</label>
+      <input name="radius" type="text" id="radius" />
+
+      <label for="concentrat">Концентрация, мг/м^3 //TODO: В третьей степени.</label>
+      <input name="concentrat" type="text" id="concentrat" />
+
+      <label for="cofSpeedSpread">Коэффициент скорости оседания вредных веществ в атмосферном воздухе</label>
+      <input name="cofSpeedSpread" type="text" id="cofSpeedSpread" />
+
+      <div class="buttons">
+        <button>Сбросить данные</button>
+        <button>Моделировать</button>
+      </div>
+    </div>
+  </div>
+
+  <div id = "map"></div>
+</body>
+</html>
