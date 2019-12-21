@@ -178,10 +178,10 @@ function createPoligon(coords1, coords2, coords3, coords4, color) {
         // Указываем координаты вершин многоугольника.
         // Координаты вершин внешнего контура.
         [
-            coords1.slice(),
-            coords2.slice(),
-            coords3.slice(),
-            coords4.slice()
+            [...coords1],
+            [...coords2],
+            [...coords3],
+            [...coords4]
         ],
     ], {
         // Описываем свойства геообъекта.
@@ -235,18 +235,13 @@ function getStartCoords(coords, map) {
         // const nyPlacemark2 = createPlacemark(ressss[1]);
         // map.geoObjects.add(nyPlacemark2);
         // getOnePoints
-        console.log(ressss);
         fetch("https://api.openweathermap.org/data/2.5/weather?lat=" + ressss[0][0].toFixed(5) + "&lon=" + ressss[0][1].toFixed(5) + "&appid=e409a8d16fd831b64ac77fa22ebc3d8e")
             .then(function (request) { return request.json(); })
             .then(function (request) {
-            console.log(request);
-            console.log(ressss);
             var distance = request.wind.speed * 15;
-            console.log(request.wind, ressss, map);
             var s2 = getOnePoints(request.wind.deg, request.wind.speed, ressss[0], map);
-            console.log(s2);
             coordsAndWinds1.push({
-                coords: s2
+                coords: s2[0]
             });
             return fetch("https://api.openweathermap.org/data/2.5/weather?lat=" + s2[0][0].toFixed(5) + "&lon=" + s2[0][0].toFixed(5) + "&appid=e409a8d16fd831b64ac77fa22ebc3d8e");
         })
@@ -255,7 +250,7 @@ function getStartCoords(coords, map) {
             var distance = request.wind.speed * 15;
             var s3 = getOnePoints(request.wind.deg, request.wind.speed, [request.coord.lon, request.coord.lat], map);
             coordsAndWinds1.push({
-                coords: s3
+                coords: s3[0]
             });
             coords1 = true;
             createPolygons(map);
@@ -265,23 +260,21 @@ function getStartCoords(coords, map) {
             .then(function (request) { return request.json(); })
             .then(function (request) {
             // let distance = request.wind.speed * 15;
-            console.log(request.wind, ressss, map);
-            var s2 = getOnePoints(request.wind.deg, request.wind.speed, ressss[1], map);
+            var s10 = getOnePoints(request.wind.deg, request.wind.speed, ressss[1], map);
             coordsAndWinds2.push({
-                coords: s2
+                coords: s10[0]
             });
-            console.log(s2);
-            return fetch("https://api.openweathermap.org/data/2.5/weather?lat=" + s2[0][0].toFixed(5) + "&lon=" + s2[0][0].toFixed(5) + "&appid=e409a8d16fd831b64ac77fa22ebc3d8e");
+            return fetch("https://api.openweathermap.org/data/2.5/weather?lat=" + s10[0][0].toFixed(5) + "&lon=" + s10[0][0].toFixed(5) + "&appid=e409a8d16fd831b64ac77fa22ebc3d8e");
         })
             .then(function (request) { return request.json(); })
             .then(function (request) {
             // let distance = request.wind.speed * 15;
-            var s3 = getOnePoints(request.wind.deg, request.wind.speed, [request.coord.lon, request.coord.lat], map);
-            coordsAndWinds1.push({
-                coords: s3
+            var s11 = getOnePoints(request.wind.deg, request.wind.speed, [request.coord.lon, request.coord.lat], map);
+            coordsAndWinds2.push({
+                coords: s11[0]
             });
             coords2 = true;
-            createPolygons();
+            createPolygons(map);
             // return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${s2[0]}&lon=${s2[1]}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`);
         });
         // map.geoObjects.add(createPoligon(coords, coords, ressss[0], ressss[1]));
@@ -289,16 +282,21 @@ function getStartCoords(coords, map) {
 }
 function createPolygons(map) {
     if (coords1 && coords2) {
-        console.log(coordsAndWinds1, coordsAndWinds2);
         coordsAndWinds1.forEach(function (item, index, array) {
-            if (index === 0) {
+            if (index === 0 || !coordsAndWinds1[index]) {
                 return;
             }
             else {
-                var polygon = createPoligon(coordsAndWinds1[index - 1].coords, coordsAndWinds2[index - 1].coords, coordsAndWinds1[index], coordsAndWinds2[index], colors[index]);
+                var polygon = createPoligon(coordsAndWinds1[index - 1].coords, coordsAndWinds2[index - 1].coords, coordsAndWinds1[index].coords, coordsAndWinds2[index].coords, colors[index]);
                 map.geoObjects.add(polygon);
             }
         });
+
+        coords1 = false;
+        coords2 = false;
+
+        coordsAndWinds1 = [];
+        coordsAndWinds2 = [];
     }
 }
 function getRegular(params) {
