@@ -9,9 +9,54 @@ const colors = [
   '#f15562'
 ];
 
+type InputElem = HTMLInputElement | null;
+
+interface OpenWeatherMap {
+  base: string; // 'model'
+  clouds: {
+    all: number;
+  }
+  cod: number;
+  coord: {
+    lat: number;
+    lon: number;
+  }
+  dt: number;
+  id: number;
+  main: {
+    feels_like: number;
+    grnd_level: number;
+    humidity: number;
+    pressure: number;
+    sea_level: number;
+    temp: number;
+    temp_max: number;
+    temp_min: number;
+  }
+  name: string;
+  sys: {
+    country: string;
+    sunrise: number;
+    sunset: number;
+  }
+  timezone: number;
+  weather: {
+    description: string;
+    icon: string;
+    id: number;
+    main: string; // Clouds
+  }[];
+  wind: {
+    deg: number;
+    speed: number;
+  }
+}
+
 interface CoordArrayItem {
   coords: [number, number];
 }
+
+ymaps.ready(init);
 
 const coordsAndWinds1: CoordArrayItem[] = [
   // {
@@ -33,50 +78,82 @@ const coordsAndWinds2: CoordArrayItem[] = [
 // }
 ];
 
+
+
 let coords2 = false;
 let coords1 = true;
 
-ymaps.ready(init);
-
-function init(){
-  let r = document.getElementById('radius');
-  let c = document.getElementById('concentrat');
-  let cof = document.getElementById('cofSpeedSpread');
-
-  c.value = '1.0';
-  r.value = '1.0';
-  cof.value = '1.0';
 
 
-  let myPlacemark,
-      Map = new ymaps.Map("map", {
+function init() {
+  let r = document.getElementById('radius') as InputElem;
+  let c = document.getElementById('concentrat') as InputElem;
+  let cof = document.getElementById('cofSpeedSpread') as InputElem;
+
+  if (c && r && cof) {
+    c.value = '1.0';
+    r.value = '1.0';
+    cof.value = '1.0';
+  }
+
+
+  let myPlacemark: ymaps.Placemark;
+  const map = new ymaps.Map("map", {
         center: [53.901596, 27.551975],
-        zoom: 6
+        zoom: 6,
+        type: "yandex#map"
       });
 
 
-  Map.events.add('click', function (e) {
-    var coords = e.get('coords');
+  map.events.add('click', (e) => {
+    e = e as ymaps.IEvent;
+    let event: ymaps.IEvent | null = e as ymaps.IEvent; // refactor that please
+    const coordsFormE = event && event.get('coords');
+
+    const coords = (coordsFormE as [number, number]);
 
     // Если метка уже создана – просто передвигаем ее.
-    if (myPlacemark) {
-        myPlacemark.geometry.setCoordinates(coords);
+    if (myPlacemark && myPlacemark.geometry) {
+        (myPlacemark.geometry as any).setCoordinates(coords); // refactor
     }
     // Если нет – создаем.
     else {
         myPlacemark = createPlacemark(coords);
-        Map.geoObjects.add(myPlacemark);
+        map.geoObjects.add(myPlacemark);
         // Слушаем событие окончания перетаскивания на метке.
-        myPlacemark.events.add('dragend', function () {
-            getAddress(myPlacemark.geometry.getCoordinates());
-        });
+        // myPlacemark.events.add('dragend', function () {
+        //   if (myPlacemark.geometry) {
+        //     getAddress((myPlacemark.geometry as any).getCoordinates() as [number, number]);
+        //   }
+        // });
     }
-    getAddress(coords);
+
+    // getAddress(coords);
+
+    let weather = {};
+    setTimeout(() => {
+      getStartCoords(coords, map);
+    }, 1000);
+
+    // fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords[0]}&lon=${coords[1]}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`)
+    //   .then( request => request.json())
+    //   .then( (request) => {
+    //     console.log(request);
+
+    //     // let wind = request.wind;
+
+    //     weather = makeFormat(request);
+    //     // Map.balloon.open(coords, {
+    //     //   contentHeader: weather.temperature
+    //     // });
+
+    //     createRadius(request.wind, coords, Map);
+    //   });
   });
 
-  function getAddress(coords) {
-    myPlacemark.properties.set('iconCaption', 'поиск...');
-    ymaps.geocode(coords).then(function (res) {
+  function getAddress(coords: [number, number]) { // refactor that please
+    // myPlacemark.properties.set('iconCaption', 'поиск...');
+    (ymaps as any).geocode(coords).then((res: { geoObjects: { get: (arg0: number) => any; }; }) => {
         var firstGeoObject = res.geoObjects.get(0);
 
         myPlacemark.properties
@@ -90,41 +167,20 @@ function init(){
                 ].filter(Boolean).join(', '),
                 // В качестве контента балуна задаем строку с адресом объекта.
                 balloonContent: firstGeoObject.getAddressLine()
-            });
+            }, {});
     });
   }
     // Map.geoObjects
     //    .add(myGeoObject);
-
-
-    Map.events.add('click', (e) => {
-      let coords = e.get('coords');
-      let weather = {};
-      getStartCoords(coords, Map);
-      // fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords[0]}&lon=${coords[1]}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`)
-      //   .then( request => request.json())
-      //   .then( (request) => {
-      //     console.log(request);
-
-      //     // let wind = request.wind;
-
-      //     weather = makeFormat(request);
-      //     // Map.balloon.open(coords, {
-      //     //   contentHeader: weather.temperature
-      //     // });
-
-      //     createRadius(request.wind, coords, Map);
-      //   });
-    });
 }
 
-function makeFormat(forecast) {
-  let weather = {};
-  weather.temperature = (forecast.main.temp - 273.15).toFixed(0);
-  return weather;
-}
+// function makeFormat(forecast) {
+//   let weather = {};
+//   weather.temperature = (forecast.main.temp - 273.15).toFixed(0);
+//   return weather;
+// }
 
-function getTwoPoints({ deg, speed }, coords, map) {
+function getTwoPoints(deg: number, speed: number, coords: [number, number], map: ymaps.Map): [[number, number], [number, number]] {
   let turn = deg;
 
   // let r = document.getElementById('radius');
@@ -152,9 +208,6 @@ function getTwoPoints({ deg, speed }, coords, map) {
 
 
   let distance = speed * 15;
-
-  console.log(coords);
-  console.log(distance);
 
   // startPoint, direction, distance)
 
@@ -162,16 +215,16 @@ function getTwoPoints({ deg, speed }, coords, map) {
 
 
 
-  let rereerer1 = ymaps.coordSystem.geo.solveDirectProblem(coords, myFunction(1, 1, deg - 5, 1), distance);
+  let rereerer1 = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(1, 1, deg - 5, 1), distance);
 
-  let rereerer2 = ymaps.coordSystem.geo.solveDirectProblem(coords, myFunction(1, 1, deg + 5, 1), distance);
+  let rereerer2 = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(1, 1, deg + 5, 1), distance);
 
-  console.log(rereerer1, rereerer2)
+  // console.log(rereerer1, rereerer2)
 
   return [rereerer1.endPoint, rereerer2.endPoint];
 }
 
-function getOnePoints(deg, speed, coords, map) {
+function getOnePoints(deg: number, speed: number, coords: [number, number], map: ymaps.Map): [number, number] {
   let turn = deg;
 
   // let r = document.getElementById('radius');
@@ -200,8 +253,8 @@ function getOnePoints(deg, speed, coords, map) {
 
   let distance = speed * 15;
 
-  console.log(coords);
-  console.log(distance);
+  // console.log(coords);
+  // console.log(distance);
 
   // startPoint, direction, distance)
 
@@ -209,17 +262,17 @@ function getOnePoints(deg, speed, coords, map) {
 
   // const cooords1 = coords.map(coord => [...coord]);
 
-  const rrrrrrrrrr = myFunction(1, 1, turn, 0.5);
+  const rrrrrrrrrr = getVectorForAngle(1, 1, turn, 0.5);
 
 
-  let rereerer1 = ymaps.coordSystem.geo.solveDirectProblem(coords, [rrrrrrrrrr[0].toFixed(3), rrrrrrrrrr[1].toFixed(3)], distance);
+  let rereerer1: { endPoint: [number, number] } = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, [rrrrrrrrrr[0].toFixed(3), rrrrrrrrrr[1].toFixed(3)], distance);
 
   // let rereerer2 = ymaps.coordSystem.geo.solveDirectProblem(coords, myFunction(1, 1, deg + 5, 1), distance);
 
-  return [rereerer1.endPoint]; //rereerer2.endPoint
+  return rereerer1.endPoint; //rereerer2.endPoint
 }
 
-function myFunction(xCoord, yCoord, angle, length) {
+function getVectorForAngle(xCoord: number, yCoord: number, angle: number, length: number) {
   length = typeof length !== 'undefined' ? length : 10;
   angle = angle * Math.PI / 180; // if you're using degrees instead of radians
 
@@ -228,11 +281,11 @@ function myFunction(xCoord, yCoord, angle, length) {
   return [firs, secon];
 }
 
-function check(value) {
+function check(value: string | number) {
   return typeof value === 'string' ? +value : value;
 }
 
-function createPoligon(coords1, coords2, coords3, coords4, color = '#00FF0088') {
+function createPoligon(coords1: [number, number], coords2: [number, number], coords3: [number, number], coords4: [number, number], color = '#00FF0088') {
   return new ymaps.Polygon([
     // Указываем координаты вершин многоугольника.
     // Координаты вершин внешнего контура.
@@ -265,19 +318,20 @@ function createPoligon(coords1, coords2, coords3, coords4, color = '#00FF0088') 
 }
 
 
-function createPlacemark(coords) {
+function createPlacemark(coords: [number, number]) {
   return new ymaps.Placemark(coords, {
-      // iconCaption: 'поиск...'
+      // iconCaption: 'поиск...',
   }, {
-      preset: 'islands#violetDotIconWithCaption',
-      draggable: true
+
+      // preset: 'islands#violetDotIconWithCaption',
+      draggable: true,
+      pane: 'islands#violetDotIconWithCaption'
   });
 }
 
-function getStartCoords(coords, map) {
-  fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${coords[0].toFixed(5)}&lon=${coords[1].toFixed(5)}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`)
-    .then( request => request.json())
-    .then( (request1) => {
+function getStartCoords(coords: [number, number], map: ymaps.Map) {
+  getWeather(coords[0], coords[1])
+    .then( (request1: OpenWeatherMap) => {
       console.log(request1);
 
       // let wind = request.wind;
@@ -287,7 +341,7 @@ function getStartCoords(coords, map) {
       //   contentHeader: weather.temperature
       // });
 
-      let distance = request1.wind.speed * 15;
+      // let distance = request1.wind.speed * 15;
 
       coordsAndWinds1.push({
         coords: coords
@@ -296,13 +350,13 @@ function getStartCoords(coords, map) {
         coords: coords
       });
 
-      console.log(coords);
+      // console.log(coords);
 
 
 
-      const ressss = getTwoPoints(request1.wind, coords, map);
+      const ressss = getTwoPoints(request1.wind.deg, request1.wind.speed, coords, map);
 
-      console.log(ressss);
+      // console.log(ressss);
 
       coordsAndWinds1.push({
         coords: ressss[0]
@@ -318,24 +372,18 @@ function getStartCoords(coords, map) {
       // map.geoObjects.add(nyPlacemark2);
 
        // getOnePoints
-      console.log(ressss);
-      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${ressss[0][0].toFixed(5)}&lon=${ressss[0][1].toFixed(5)}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`)
-        .then(request => request.json())
+      // console.log(ressss);
+      getWeather(ressss[0][0], ressss[0][1])
         .then(request => {
-          console.log(request);
-          console.log(ressss);
-          let distance = request.wind.speed * 15;
-          console.log(request.wind, ressss, map);
+          // let distance = request.wind.speed * 15;
           const s2 = getOnePoints(request.wind.deg, request.wind.speed, ressss[0], map);
-          console.log(s2);
           coordsAndWinds1.push({
             coords: s2
           });
-          return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${s2[0][0].toFixed(5)}&lon=${s2[0][0].toFixed(5)}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`);
+          return getWeather(s2[0], s2[1]);
         })
-        .then(request => request.json())
         .then(request => {
-          let distance = request.wind.speed * 15;
+          // let distance = request.wind.speed * 15;
           const s3 = getOnePoints(request.wind.deg, request.wind.speed, [request.coord.lon, request.coord.lat], map);
           coordsAndWinds1.push({
             coords: s3
@@ -345,28 +393,26 @@ function getStartCoords(coords, map) {
           // return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${s2[0]}&lon=${s2[1]}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`);
         });
 
-      fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${ressss[1][0].toFixed(5)}&lon=${ressss[1][1].toFixed(5)}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`)
-        .then(request => request.json())
+      getWeather(ressss[1][0] ,ressss[1][1])
         .then(request => {
           // let distance = request.wind.speed * 15;
-          console.log(request.wind, ressss, map);
+          // console.log((request as any).wind, ressss, map);
           const s2 = getOnePoints(request.wind.deg, request.wind.speed, ressss[1], map);
           coordsAndWinds2.push({
             coords: s2
           });
 
-          console.log(s2);
-          return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${s2[0][0].toFixed(5)}&lon=${s2[0][0].toFixed(5)}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`);
+          // console.log(s2);
+          return getWeather(s2[0], s2[0]);
         })
-        .then(request => request.json())
         .then(request => {
           // let distance = request.wind.speed * 15;
           const s3 = getOnePoints(request.wind.deg, request.wind.speed, [request.coord.lon, request.coord.lat], map);
-          coordsAndWinds1.push({
+          coordsAndWinds2.push({
             coords: s3
           });
           coords2 = true;
-          createPolygons();
+          createPolygons(map);
           // return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${s2[0]}&lon=${s2[1]}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`);
         });
 
@@ -374,32 +420,34 @@ function getStartCoords(coords, map) {
     });
 }
 
-function createPolygons(map) {
+function createPolygons(map: ymaps.Map) {
   if (coords1 && coords2) {
-    console.log(coordsAndWinds1, coordsAndWinds2);
+    // console.log(coordsAndWinds1, coordsAndWinds2);
     coordsAndWinds1.forEach((item, index, array) => {
       if (index === 0) {
         return;
       } else {
-        const polygon = createPoligon(coordsAndWinds1[index - 1].coords, coordsAndWinds2[index - 1].coords, coordsAndWinds1[index], coordsAndWinds2[index], colors[index]);
+        const polygon = createPoligon(
+          coordsAndWinds1[index - 1].coords,
+          coordsAndWinds2[index - 1].coords,
+          coordsAndWinds1[index].coords,
+          coordsAndWinds2[index].coords,
+          ); // colors[index]
 
         map.geoObjects.add(polygon);
       }
-    })
+    });
+
+    coords1 = false;
+    coords2 = false;
   }
 }
 
-function getRegular(params) {
+// function getRegular(params) {
 
+// }
+
+function getWeather(lat: number, lon: number): Promise<OpenWeatherMap> {
+  return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=e409a8d16fd831b64ac77fa22ebc3d8e`)
+    .then(request => request.json())
 }
-
-
-/*
-{
-"coord":{"lon":139.01,"lat":35.02},
-"weather":[{"id":800,"main":"Clear",
-"description":"clear sky","icon":"01n"}],
-"base":"stations",
-"main":{"temp":285.514,
-"pressure":1013.75,"humidity":100,"temp_min":285.514,"temp_max":285.514,"sea_level":1023.22,"grnd_level":1013.75},"wind":{"speed":5.52,"deg":311},"clouds":{"all":0},"dt":1485792967,"sys":{"message":0.0025,"country":"JP","sunrise":1485726240,"sunset":1485763863},"id":1907296,"name":"Tawarano","cod":200}
-*/
