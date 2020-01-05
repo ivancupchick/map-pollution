@@ -132,7 +132,14 @@ let coords1 = false;
 
 let arrayForControllingCount: boolean[] = [];
 
+let myPlacemark: ymaps.Placemark;
 
+function clearMap(map: ymaps.Map, placemark: ymaps.Placemark) {
+  if (placemark) {
+    map.geoObjects.removeAll();
+    map.geoObjects.add(placemark);
+  }
+}
 
 function init() {
   let r = document.getElementById('radius') as InputElem;
@@ -145,13 +152,11 @@ function init() {
     cof.value = '1.0';
   }
 
-
-  let myPlacemark: ymaps.Placemark;
   const map = new ymaps.Map("map", {
-        center: [53.901596, 27.551975],
-        zoom: 6,
-        type: "yandex#map"
-      });
+    center: [53.901596, 27.551975],
+    zoom: 6,
+    type: "yandex#map"
+  });
 
 
   map.events.add('click', (e) => {
@@ -164,9 +169,7 @@ function init() {
     // Если метка уже создана – просто передвигаем ее.
     if (myPlacemark && myPlacemark.geometry) {
         (myPlacemark.geometry as any).setCoordinates(coords); // refactor
-    }
-    // Если нет – создаем.
-    else {
+    } else {
       myPlacemark = new (ymaps.Placemark as any)(coords, {
           iconCaption: 'Точка загрязнения',
       }, {
@@ -184,10 +187,20 @@ function init() {
       // });
     }
 
-    // getAddress(coords);
+    clearMap(map, myPlacemark);
 
-    let weather = {};
-    getStartCoords(coords, map);
+    // getAddress(coords);
+  });
+
+  const modelButton = document.getElementById('button-for-modulation');
+  modelButton && modelButton.addEventListener('click', (e) => {
+    if (myPlacemark) {
+      clearMap(map, myPlacemark);
+
+      const coords = (myPlacemark.geometry as any).getCoordinates();
+
+      getStartCoords(coords, map);
+    }
   });
 
   function getAddress(coords: [number, number]) { // refactor that please
@@ -424,6 +437,7 @@ const createPlacemark = (coords: [number, number]) => {
 }
 
 function getStartCoords(coords: [number, number], map: ymaps.Map) {
+  // comment this if for test
   if (countOfRequest > 58) {
     return;
   }
@@ -489,6 +503,8 @@ function getPromiseWeather(array: CoordArrayItem[], [lat, lon]: [number, number]
     }
 
     createPolygons(map, distanceFromStart);
+
+    // countOfRequest = 0; // for test
     return;
   }
 
@@ -601,9 +617,9 @@ let speedStart = 4.68;
 function getWeather(lat: number, lon: number): Promise<OpenWeatherMapWind> {
 
   return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
-    .then(request => request.json())
+    .then(request => request.json());
 
-  // return new Promise((resolve, reject) => { // test
+  // return new Promise((resolve, reject) => { // for test
   //   const newWindData: OpenWeatherMapWind = {
   //     wind: {
   //       deg: degStart++,
@@ -614,7 +630,7 @@ function getWeather(lat: number, lon: number): Promise<OpenWeatherMapWind> {
   //   speedStart += 0.1;
 
   //   resolve(newWindData);
-  // })
+  // });
 }
 
 // function getAreaCoord(point, azimut, corner, length): [number, number][] { // получение координат сектора

@@ -53,6 +53,13 @@ let coordsAndWinds2 = [];
 let coords2 = false;
 let coords1 = false;
 let arrayForControllingCount = [];
+let myPlacemark;
+function clearMap(map, placemark) {
+    if (placemark) {
+        map.geoObjects.removeAll();
+        map.geoObjects.add(placemark);
+    }
+}
 function init() {
     let r = document.getElementById('radius');
     let c = document.getElementById('concentrat');
@@ -62,7 +69,6 @@ function init() {
         r.value = '1.0';
         cof.value = '1.0';
     }
-    let myPlacemark;
     const map = new ymaps.Map("map", {
         center: [53.901596, 27.551975],
         zoom: 6,
@@ -84,8 +90,15 @@ function init() {
             });
             map.geoObjects.add(myPlacemark);
         }
-        let weather = {};
-        getStartCoords(coords, map);
+        clearMap(map, myPlacemark);
+    });
+    const modelButton = document.getElementById('button-for-modulation');
+    modelButton && modelButton.addEventListener('click', (e) => {
+        if (myPlacemark) {
+            clearMap(map, myPlacemark);
+            const coords = myPlacemark.geometry.getCoordinates();
+            getStartCoords(coords, map);
+        }
     });
     function getAddress(coords) {
         ymaps.geocode(coords).then((res) => {
