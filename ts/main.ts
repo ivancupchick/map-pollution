@@ -149,13 +149,13 @@ function clearMap(map: ymaps.Map, placemark?: ymaps.Placemark) {
 }
 
 function init() {
-  let r = document.getElementById('radius') as InputElem;
+  // let r = document.getElementById('radius') as InputElem;
   let c = document.getElementById('concentrat') as InputElem;
   let cof = document.getElementById('cofSpeedSpread') as InputElem;
 
-  if (c && r && cof) {
+  if (c && cof) { // && r
     c.value = '1.0';
-    r.value = '1.0';
+    // r.value = '1.0';
     cof.value = '1.0';
   }
 

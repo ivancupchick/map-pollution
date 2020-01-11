@@ -65,12 +65,10 @@ function clearMap(map, placemark) {
     }
 }
 function init() {
-    let r = document.getElementById('radius');
     let c = document.getElementById('concentrat');
     let cof = document.getElementById('cofSpeedSpread');
-    if (c && r && cof) {
+    if (c && cof) {
         c.value = '1.0';
-        r.value = '1.0';
         cof.value = '1.0';
     }
     const map = new ymaps.Map("map", {
