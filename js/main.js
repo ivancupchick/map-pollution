@@ -1,3 +1,4 @@
+let test = true;
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 const colors = [
     '#49db54',
@@ -187,6 +188,11 @@ const createPlacemark = (coords) => {
     });
 };
 function getStartCoords(coords, map) {
+    if (!test) {
+        if (countOfRequest > 58) {
+            return;
+        }
+    }
     getWeather(coords[0], coords[1])
         .then((request1) => {
         countOfRequest += 1;
@@ -227,7 +233,9 @@ function getPromiseWeather(array, [lat, lon], map, controlArrayObject, setOffset
             distanceFromStart = ymaps.coordSystem.geo.getDistance(coordsAndWinds2[coordsAndWinds2.length - 1].coords, coordsAndWinds1[coordsAndWinds1.length - 1].coords);
         }
         createPolygons(map, distanceFromStart);
-        countOfRequest = 0;
+        if (test) {
+            countOfRequest = 0;
+        }
         return;
     }
     countOfRequest++;
@@ -304,15 +312,21 @@ function createPolygons(map, distance) {
 let degStart = 127;
 let speedStart = 4.68;
 function getWeather(lat, lon) {
-    return new Promise((resolve, reject) => {
-        const newWindData = {
-            wind: {
-                deg: degStart++,
-                speed: speedStart
-            }
-        };
-        speedStart += 0.1;
-        resolve(newWindData);
-    });
+    if (!test) {
+        return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
+            .then(request => request.json());
+    }
+    else {
+        return new Promise((resolve, reject) => {
+            const newWindData = {
+                wind: {
+                    deg: degStart++,
+                    speed: speedStart
+                }
+            };
+            speedStart += 0.1;
+            resolve(newWindData);
+        });
+    }
 }
 //# sourceMappingURL=main.js.map

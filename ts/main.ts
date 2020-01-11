@@ -1,3 +1,7 @@
+// start test managment
+let test = true;
+// end test managment
+
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 
 const colors = [
@@ -445,10 +449,12 @@ const createPlacemark = (coords: Point) => {
 }
 
 function getStartCoords(coords: Point, map: ymaps.Map) {
-  // comment this if for test
-  // if (countOfRequest > 58) {
-  //   return;
-  // }
+  if (!test) {   // comment this if for test
+    if (countOfRequest > 58) {
+      return;
+    }
+  }
+
 
   getWeather(coords[0], coords[1])
     .then( (request1: OpenWeatherMap) => {
@@ -512,7 +518,9 @@ function getPromiseWeather(array: CoordArrayItem[], [lat, lon]: Point, map, cont
 
     createPolygons(map, distanceFromStart);
 
-    countOfRequest = 0; // for test
+    if (test) {
+      countOfRequest = 0;
+    }
     return;
   }
 
@@ -623,22 +631,23 @@ let degStart = 127;
 let speedStart = 4.68;
 
 function getWeather(lat: number, lon: number): Promise<OpenWeatherMapWind> {
+  if (!test) {
+    return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
+      .then(request => request.json());
+  } else {
+    return new Promise((resolve, reject) => { // for test
+        const newWindData: OpenWeatherMapWind = {
+          wind: {
+            deg: degStart++,
+            speed: speedStart
+          }
+        };
 
-  // return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
-  //   .then(request => request.json());
+        speedStart += 0.1;
 
-  return new Promise((resolve, reject) => { // for test
-    const newWindData: OpenWeatherMapWind = {
-      wind: {
-        deg: degStart++,
-        speed: speedStart
-      }
-    };
-
-    speedStart += 0.1;
-
-    resolve(newWindData);
-  });
+        resolve(newWindData);
+      });
+  }
 }
 
 // function getAreaCoord(point, azimut, corner, length): Point[] { // получение координат сектора
