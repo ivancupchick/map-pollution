@@ -55,9 +55,12 @@ let coords1 = false;
 let arrayForControllingCount = [];
 let myPlacemark;
 function clearMap(map, placemark) {
+    map.geoObjects.removeAll();
     if (placemark) {
-        map.geoObjects.removeAll();
         map.geoObjects.add(placemark);
+    }
+    else {
+        myPlacemark = null;
     }
 }
 function init() {
@@ -99,6 +102,10 @@ function init() {
             const coords = myPlacemark.geometry.getCoordinates();
             getStartCoords(coords, map);
         }
+    });
+    const clearButton = document.getElementById('button-for-clear');
+    clearButton && clearButton.addEventListener('click', (e) => {
+        map && clearMap(map);
     });
     function getAddress(coords) {
         ymaps.geocode(coords).then((res) => {
@@ -180,9 +187,6 @@ const createPlacemark = (coords) => {
     });
 };
 function getStartCoords(coords, map) {
-    if (countOfRequest > 58) {
-        return;
-    }
     getWeather(coords[0], coords[1])
         .then((request1) => {
         countOfRequest += 1;
@@ -223,6 +227,7 @@ function getPromiseWeather(array, [lat, lon], map, controlArrayObject, setOffset
             distanceFromStart = ymaps.coordSystem.geo.getDistance(coordsAndWinds2[coordsAndWinds2.length - 1].coords, coordsAndWinds1[coordsAndWinds1.length - 1].coords);
         }
         createPolygons(map, distanceFromStart);
+        countOfRequest = 0;
         return;
     }
     countOfRequest++;
@@ -299,7 +304,15 @@ function createPolygons(map, distance) {
 let degStart = 127;
 let speedStart = 4.68;
 function getWeather(lat, lon) {
-    return fetch(`https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${API_KEY}`)
-        .then(request => request.json());
+    return new Promise((resolve, reject) => {
+        const newWindData = {
+            wind: {
+                deg: degStart++,
+                speed: speedStart
+            }
+        };
+        speedStart += 0.1;
+        resolve(newWindData);
+    });
 }
 //# sourceMappingURL=main.js.map
