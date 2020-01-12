@@ -1,4 +1,4 @@
-let test = true;
+let test = false;
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 const colors = [
     '#49db54',
