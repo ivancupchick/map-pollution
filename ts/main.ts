@@ -611,11 +611,10 @@ function createPolygons(map: ymaps.Map, distance: number) {
 
         const angle = ((angleOfPoint1 - 10) + (angleOfPoint2 + 10)) / 2
 
-        console.log(distance / 10);
+        const endPoint: Point = (ymaps as any).coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 2).endPoint;
 
-        const endPoint: Point = (ymaps as any).coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 6).endPoint;
+        const polygon = getFinalPolygon(coordsOfPoint1, coordsOfPoint2, endPoint, index);
 
-        const polygon = createPoligon([coordsOfPoint1, coordsOfPoint2, endPoint], getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc)));
         map.geoObjects.add(polygon);
       }
     });
@@ -650,19 +649,46 @@ function getWeather(lat: number, lon: number): Promise<OpenWeatherMapWind> {
   }
 }
 
-// function getAreaCoord(point, azimut, corner, length): Point[] { // получение координат сектора
-//   var sector = [];
-//   var firstSide = Math.PI * ((360 - azimut) + 90) / 180, // азимут в радианах
-//   secondSide = firstSide - (Math.PI * corner / 180),
-//   dir2 = [Math.sin(firstSide), Math.cos(firstSide)]; // направление по азимуту
-//   sector[0] = (ymaps as any).coordSystem.geo.solveDirectProblem(point, dir2, length).endPoint;
-//   var i = 1;
-//   for(var sectopPoint = 5; sectopPoint <= corner; sectopPoint += 5) {
-//   var middlePoint = sectopPoint;
-//   var side = firstSide - (Math.PI * middlePoint / 180);
-//   var dir4 = [Math.sin(side), Math.cos(side)];
-//   sector[i] = (ymaps as any).coordSystem.geo.solveDirectProblem(point, dir4, length).endPoint;
-//     i++
-//   }
-//   return sector;
-// }
+function getFinalPolygon(firstPoint: Point, secondPoint: Point, centerPoint: Point, index: number) {
+  const result = [ firstPoint ];
+
+  const firstLineSize = getDistanceFrom2Points(firstPoint, centerPoint);
+  const secondLineSize = getDistanceFrom2Points(secondPoint, centerPoint);
+
+  for (let i = 0; i < 1; i += 0.05) {
+    const firstP = getPointOnSegment(firstPoint, centerPoint, firstLineSize * i);
+    const secondP = getPointOnSegment(centerPoint, secondPoint, secondLineSize * i);
+
+    const distanceNewLine = getDistanceFrom2Points(firstP, secondP);
+    const p = getPointOnSegment(firstP, secondP, distanceNewLine * i);
+    result.push(p);
+  }
+
+  result.push(secondPoint);
+
+  return createPoligon(result, getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc)));
+}
+
+function getPointOnSegment(firstPoint: Point, secondPoint: Point, distanceFromPoint): Point {
+  const Xa = firstPoint[0];
+  const Ya = firstPoint[1];
+
+  const Xb = secondPoint[0];
+  const Yb = secondPoint[1];
+
+  const Rac = distanceFromPoint;
+
+  const Rab = Math.sqrt( Math.pow((Xb-Xa), 2) + Math.pow((Yb-Ya),2));
+  const k = Rac / Rab;
+  const Xc = Xa + (Xb-Xa)*k;
+  const Yc = Ya + (Yb-Ya)*k;
+
+  return [Xc, Yc];
+}
+
+function getDistanceFrom2Points(firstPoint: Point, secondPoint: Point): number {
+  const lineX = Math.abs(firstPoint[0] - secondPoint[0]);
+  const lineY = Math.abs(firstPoint[1] - secondPoint[1]);
+
+  return Math.sqrt( (lineX * lineX) + (lineY * lineY) );
+}

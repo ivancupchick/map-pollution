@@ -296,9 +296,8 @@ function createPolygons(map, distance) {
                 const angleOfPoint2 = coordsAndWinds2[index].deg;
                 const coordsOfCenter = [(coordsOfPoint1[0] + coordsOfPoint2[0]) / 2, (coordsOfPoint1[1] + coordsOfPoint2[1]) / 2];
                 const angle = ((angleOfPoint1 - 10) + (angleOfPoint2 + 10)) / 2;
-                console.log(distance / 10);
-                const endPoint = ymaps.coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 6).endPoint;
-                const polygon = createPoligon([coordsOfPoint1, coordsOfPoint2, endPoint], getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc)));
+                const endPoint = ymaps.coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 2).endPoint;
+                const polygon = getFinalPolygon(coordsOfPoint1, coordsOfPoint2, endPoint, index);
                 map.geoObjects.add(polygon);
             }
         });
@@ -326,5 +325,36 @@ function getWeather(lat, lon) {
             resolve(newWindData);
         });
     }
+}
+function getFinalPolygon(firstPoint, secondPoint, centerPoint, index) {
+    const result = [firstPoint];
+    const firstLineSize = getDistanceFrom2Points(firstPoint, centerPoint);
+    const secondLineSize = getDistanceFrom2Points(secondPoint, centerPoint);
+    for (let i = 0; i < 1; i += 0.05) {
+        const firstP = getPointOnSegment(firstPoint, centerPoint, firstLineSize * i);
+        const secondP = getPointOnSegment(centerPoint, secondPoint, secondLineSize * i);
+        const distanceNewLine = getDistanceFrom2Points(firstP, secondP);
+        const p = getPointOnSegment(firstP, secondP, distanceNewLine * i);
+        result.push(p);
+    }
+    result.push(secondPoint);
+    return createPoligon(result, getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc)));
+}
+function getPointOnSegment(firstPoint, secondPoint, distanceFromPoint) {
+    const Xa = firstPoint[0];
+    const Ya = firstPoint[1];
+    const Xb = secondPoint[0];
+    const Yb = secondPoint[1];
+    const Rac = distanceFromPoint;
+    const Rab = Math.sqrt(Math.pow((Xb - Xa), 2) + Math.pow((Yb - Ya), 2));
+    const k = Rac / Rab;
+    const Xc = Xa + (Xb - Xa) * k;
+    const Yc = Ya + (Yb - Ya) * k;
+    return [Xc, Yc];
+}
+function getDistanceFrom2Points(firstPoint, secondPoint) {
+    const lineX = Math.abs(firstPoint[0] - secondPoint[0]);
+    const lineY = Math.abs(firstPoint[1] - secondPoint[1]);
+    return Math.sqrt((lineX * lineX) + (lineY * lineY));
 }
 //# sourceMappingURL=main.js.map
