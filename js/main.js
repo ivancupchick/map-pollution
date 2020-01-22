@@ -1,4 +1,11 @@
 let test = false;
+function pow(x, y) {
+    return Math.pow(x, y);
+}
+function getById(id) {
+    const result = document.getElementById(id);
+    return result ? result : null;
+}
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 const colors = [
     '#49db54',
@@ -65,8 +72,8 @@ function clearMap(map, placemark) {
     }
 }
 function init() {
-    let c = document.getElementById('concentrat');
-    let cof = document.getElementById('cofSpeedSpread');
+    let c = getById('concentrat');
+    let cof = getById('cofSpeedSpread');
     if (c && cof) {
         c.value = '1.0';
         cof.value = '1.0';
@@ -94,7 +101,7 @@ function init() {
         }
         clearMap(map, myPlacemark);
     });
-    const modelButton = document.getElementById('button-for-modulation');
+    const modelButton = getById('button-for-modulation');
     modelButton && modelButton.addEventListener('click', (e) => {
         if (myPlacemark) {
             clearMap(map, myPlacemark);
@@ -102,30 +109,16 @@ function init() {
             getStartCoords(coords, map);
         }
     });
-    const clearButton = document.getElementById('button-for-clear');
+    const clearButton = getById('button-for-clear');
     clearButton && clearButton.addEventListener('click', (e) => {
         map && clearMap(map);
     });
-    function getAddress(coords) {
-        ymaps.geocode(coords).then((res) => {
-            var firstGeoObject = res.geoObjects.get(0);
-            myPlacemark.properties
-                .set({
-                iconCaption: [
-                    firstGeoObject.getLocalities().length ? firstGeoObject.getLocalities() : firstGeoObject.getAdministrativeAreas(),
-                    firstGeoObject.getThoroughfare() || firstGeoObject.getPremise()
-                ].filter(Boolean).join(', '),
-                balloonContent: firstGeoObject.getAddressLine()
-            }, {});
-        });
-    }
 }
 function getTwoPoints(deg, speed, coords, map, processer1, processer2) {
-    let turn = deg;
     let distance = speed * 15 * 60;
     let rereerer1 = ymaps.coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer1(deg)), distance);
     let rereerer2 = ymaps.coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer2(deg)), distance);
-    return [rereerer1.endPoint, rereerer2.endPoint];
+    return rereerer1 && rereerer2 ? [rereerer1.endPoint, rereerer2.endPoint] : [null, null];
 }
 function getOnePoints(deg, speed, coords, map, processer) {
     let turn = deg;
@@ -136,30 +129,10 @@ function getOnePoints(deg, speed, coords, map, processer) {
 }
 function getVectorForAngle(angle) {
     const az1 = angle * Math.PI / 180;
-    const dir1 = [Math.sin(az1), Math.cos(az1)];
-    return dir1;
+    return [Math.sin(az1), Math.cos(az1)];
 }
 function check(value) {
     return typeof value === 'string' ? +value : value;
-}
-function createStepConusPoligon(coords1, coords2, coords3, coords4, color = '#00FF0088') {
-    if (color.length < 9) {
-        color += '88';
-    }
-    return new ymaps.Polygon([
-        [
-            [...coords1],
-            [...coords3],
-            [...coords4],
-            [...coords2],
-        ],
-    ], {
-        hintContent: "Многоугольник"
-    }, {
-        fillColor: color,
-        strokeColor: color.slice(0, -2),
-        strokeWidth: 1
-    });
 }
 function createPoligon(coords, color = '#00FF0088') {
     if (color.length < 9) {
@@ -194,8 +167,8 @@ function getStartCoords(coords, map) {
     getWeather(coords[0], coords[1])
         .then((request1) => {
         countOfRequest += 1;
-        const concInStartPosition = +document.getElementById('concentrat').value;
-        const cofSpeedSpreadF = +document.getElementById('cofSpeedSpread').value;
+        const concInStartPosition = +getById('concentrat').value;
+        const cofSpeedSpreadF = +getById('cofSpeedSpread').value;
         coordsAndWinds1.push({
             coords: coords,
             deg: request1.wind.deg,
@@ -207,8 +180,6 @@ function getStartCoords(coords, map) {
             conc: concInStartPosition
         });
         const ressss = getTwoPoints(request1.wind.deg, request1.wind.speed, coords, map, (r) => (r - 10), (r) => (r + 10));
-        const conc1 = 4;
-        const conc2 = 4;
         coordsAndWinds1.push({
             coords: ressss[0],
             deg: request1.wind.deg,
@@ -264,17 +235,17 @@ function calculateConc(array, currentPoint, concInStartPosition, windSpeed, cofS
     let s = 1;
     let cofX = distanceFromStart / xM;
     if (cofX <= 1) {
-        s = (3 * Math.pow(cofX, 4)) - (8 * Math.pow(cofX, 3)) + (6 * Math.pow(cofX, 2));
+        s = (3 * pow(cofX, 4)) - (8 * pow(cofX, 3)) + (6 * pow(cofX, 2));
     }
     else if (cofX > 1 && cofX <= 8) {
-        s = 1.13 / ((0.13 * Math.pow(cofX, 2)) + 1);
+        s = 1.13 / ((0.13 * pow(cofX, 2)) + 1);
     }
     else if (cofX > 8) {
         if (cofSpeedSpreadF <= 1.5) {
-            s = cofX / ((3.58 * Math.pow(cofX, 2)) - (35.2 * cofX) + 120);
+            s = cofX / ((3.58 * pow(cofX, 2)) - (35.2 * cofX) + 120);
         }
         else if (cofSpeedSpreadF > 1.5) {
-            s = 1 / ((0.1 * Math.pow(cofX, 2)) + (2.47 * cofX) - 17.8);
+            s = 1 / ((0.1 * pow(cofX, 2)) + (2.47 * cofX) - 17.8);
         }
     }
     return concInStartPosition * s;
@@ -286,7 +257,12 @@ function createPolygons(map, distance) {
                 return;
             }
             else {
-                const polygon = createStepConusPoligon(coordsAndWinds1[index - 1].coords, coordsAndWinds2[index - 1].coords, coordsAndWinds1[index].coords, coordsAndWinds2[index].coords, getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc)));
+                const polygon = createPoligon([
+                    coordsAndWinds1[index - 1].coords,
+                    coordsAndWinds1[index].coords,
+                    coordsAndWinds2[index].coords,
+                    coordsAndWinds2[index - 1].coords
+                ], getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc)));
                 map.geoObjects.add(polygon);
             }
             if (index === (array.length - 1) || (!coordsAndWinds2[index + 1] || !coordsAndWinds1[index + 1])) {
@@ -346,7 +322,7 @@ function getPointOnSegment(firstPoint, secondPoint, distanceFromPoint) {
     const Xb = secondPoint[0];
     const Yb = secondPoint[1];
     const Rac = distanceFromPoint;
-    const Rab = Math.sqrt(Math.pow((Xb - Xa), 2) + Math.pow((Yb - Ya), 2));
+    const Rab = Math.sqrt(pow((Xb - Xa), 2) + pow((Yb - Ya), 2));
     const k = Rac / Rab;
     const Xc = Xa + (Xb - Xa) * k;
     const Yc = Ya + (Yb - Ya) * k;

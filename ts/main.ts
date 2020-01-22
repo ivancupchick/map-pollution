@@ -2,6 +2,16 @@
 let test = false;
 // end test managment
 
+// good functions
+function pow(x: number, y: number) {
+  return Math.pow(x, y)
+}
+
+function getById(id: string): HTMLInputElement | HTMLElement {
+  const result = document.getElementById(id);
+  return result ? result : null;
+}
+
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 
 const colors = [
@@ -38,7 +48,6 @@ function getColor(conc: number): string {
 }
 
 type Point = [number, number];
-type InputElem = HTMLInputElement | null;
 
 interface OpenWeatherMap extends OpenWeatherMapWind {
   base: string; // 'model'
@@ -149,9 +158,9 @@ function clearMap(map: ymaps.Map, placemark?: ymaps.Placemark) {
 }
 
 function init() {
-  // let r = document.getElementById('radius') as InputElem;
-  let c = document.getElementById('concentrat') as InputElem;
-  let cof = document.getElementById('cofSpeedSpread') as InputElem;
+  // let r = getById('radius') as HTMLInputElement;
+  let c = getById('concentrat') as HTMLInputElement;
+  let cof = getById('cofSpeedSpread') as HTMLInputElement;
 
   if (c && cof) { // && r
     c.value = '1.0';
@@ -199,7 +208,7 @@ function init() {
     // getAddress(coords);
   });
 
-  const modelButton = document.getElementById('button-for-modulation');
+  const modelButton = getById('button-for-modulation');
   modelButton && modelButton.addEventListener('click', (e) => {
     if (myPlacemark) {
       clearMap(map, myPlacemark);
@@ -210,200 +219,39 @@ function init() {
     }
   });
 
-  const clearButton = document.getElementById('button-for-clear');
+  const clearButton = getById('button-for-clear');
   clearButton && clearButton.addEventListener('click', (e) => {
     map && clearMap(map);
   });
-
-  function getAddress(coords: Point) { // refactor that please
-    // myPlacemark.properties.set('iconCaption', 'поиск...');
-    (ymaps as any).geocode(coords).then((res: { geoObjects: { get: (arg0: number) => any; }; }) => {
-        var firstGeoObject = res.geoObjects.get(0);
-
-        myPlacemark.properties
-            .set({
-                // Формируем строку с данными об объекте.
-                iconCaption: [
-                    // Название населенного пункта или вышестоящее административно-территориальное образование.
-                    firstGeoObject.getLocalities().length ? firstGeoObject.getLocalities() : firstGeoObject.getAdministrativeAreas(),
-                    // Получаем путь до топонима, если метод вернул null, запрашиваем наименование здания.
-                    firstGeoObject.getThoroughfare() || firstGeoObject.getPremise()
-                ].filter(Boolean).join(', '),
-                // В качестве контента балуна задаем строку с адресом объекта.
-                balloonContent: firstGeoObject.getAddressLine()
-            }, {});
-    });
-  }
-    // Map.geoObjects
-    //    .add(myGeoObject);
 }
 
-// function makeFormat(forecast) {
-//   let weather = {};
-//   weather.temperature = (forecast.main.temp - 273.15).toFixed(0);
-//   return weather;
-// }
-
 function getTwoPoints(deg: number, speed: number, coords: Point, map: ymaps.Map, processer1: (value: number) => number, processer2: (value: number) => number): [Point, Point] {
-  let turn = deg;
-
-  // let r = document.getElementById('radius');
-  // console.log(r.value);
-  // if (!r || !r.value) {
-  //   alert('Введите радиус');
-  // }
-  // r = check(r);
-
-
-  // let c = document.getElementById('concentrat');
-  // console.log(c.value);
-  // if (!c || !c.value) {
-  //   alert('Введите концентрацию');
-  // }
-  // c = check(c);
-
-
-  // let cof = document.getElementById('cofSpeedSpread');
-  // console.log(cof.value);
-  // if (!cof || !cof.value) {
-  //   alert('Введите коэффициент');
-  // }
-  // cof = check(cof);
-
-
   let distance = speed * 15 * 60;
 
-  // startPoint, direction, distance)
-
-  // let coordSystem = new ICoordSystem();
-
-
-
-  // (map.options as any).get('projection').getCoordSystem()
   let rereerer1 = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer1(deg)), distance);
   let rereerer2 = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer2(deg)), distance);
 
-  // console.log(rereerer1, rereerer2)
-
-  // map.geoObjects.add( new (ymaps as any).Placemark(rereerer1.endPoint, {
-  //   iconCaption: 'поиск...',
-  // }, {
-
-  //   // preset: 'islands#violetDotIconWithCaption',
-  //   draggable: true,
-  //   pane: 'islands#violetDotIconWithCaption'
-  // }));
-
-  // map.geoObjects.add( new (ymaps as any).Placemark(rereerer2.endPoint, {
-  //   iconCaption: 'поиск...',
-  // }, {
-
-  //   // preset: 'islands#violetDotIconWithCaption',
-  //   draggable: true,
-  //   pane: 'islands#violetDotIconWithCaption'
-  // }));
-
-  return [rereerer1.endPoint, rereerer2.endPoint];
+  return rereerer1 && rereerer2 ? [rereerer1.endPoint, rereerer2.endPoint] : [null, null];
 }
 
 function getOnePoints(deg: number, speed: number, coords: Point, map: ymaps.Map, processer: (r: number) => number): Point {
   let turn = deg;
   let distance = speed * 15 * 60;
 
-  // console.log(coords);
-  // console.log(distance);
-
-  // startPoint, direction, distance)
-
-  // let coordSystem = new ICoordSystem();
-
-  // const cooords1 = coords.map(coord => [...coord]);
-
   const rrrrrrrrrr = getVectorForAngle(processer(turn));
-
-
 
   let rereerer1: { endPoint: Point } = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, [rrrrrrrrrr[0], rrrrrrrrrr[1]], distance);
 
-  // map.geoObjects.add( new (ymaps.Placemark as any)(rereerer1.endPoint, {
-  //   iconCaption: 'поиск...',
-  // }, {
-
-  //   // preset: 'islands#violetDotIconWithCaption',
-  //   draggable: true,
-  //   pane: 'islands#violetDotIconWithCaption'
-  // }));
-
-  // let rereerer2 = ymaps.coordSystem.geo.solveDirectProblem(coords, myFunction(1, 1, deg + 5, 1), distance);
-
-  return rereerer1.endPoint; //rereerer2.endPoint
+  return rereerer1.endPoint;
 }
 
-function getVectorForAngle(angle: number) {
-  // console.log('----');
-  // console.log(angle);
+function getVectorForAngle(angle: number): [number, number] {
   const az1 = angle * Math.PI / 180;
-
-  // console.log(az1);
-  // console.log('----');
-
-  const dir1 = [Math.sin(az1), Math.cos(az1)];
-
-  // console.log('----');
-  // console.log(dir1);
-  // console.log('----');
-
-  return dir1;
-
-
-  // length = typeof length !== 'undefined' ? length : 10;
-  // angle = angle * Math.PI / 180; // if you're using degrees instead of radians
-
-  // const firs = (length * Math.cos(angle)) + xCoord;
-  // const secon = (length * Math.sin(angle)) + yCoord;
-  // return [firs, secon];
+  return [Math.sin(az1), Math.cos(az1)];
 }
 
-function check(value: string | number) {
+function check(value: string | number): number {
   return typeof value === 'string' ? +value : value;
-}
-
-function createStepConusPoligon(coords1: Point, coords2: Point, coords3: Point, coords4: Point, color = '#00FF0088') {
-  if (color.length < 9) {
-    color += '88';
-  }
-
-  return new ymaps.Polygon([
-    // Указываем координаты вершин многоугольника.
-    // Координаты вершин внешнего контура.
-    [
-        [...coords1],
-        [...coords3],
-        [...coords4],
-        [...coords2],
-
-        // [55.75, 37.70],
-        // [55.70, 37.70],
-        // [55.70, 37.50]
-    ],
-    // Координаты вершин внутреннего контура.
-    // [
-    //     [55.75, 37.52],
-    //     [55.75, 37.68],
-    //     [55.65, 37.60]
-    // ]
-  ], {
-      // Описываем свойства геообъекта.
-      // Содержимое балуна.
-      hintContent: "Многоугольник"
-  }, {
-      // Задаем опции геообъекта.
-      // Цвет заливки.
-      fillColor: color,
-      strokeColor: color.slice(0, -2),
-      // Ширина обводки.
-      strokeWidth: 1
-  });
 }
 
 function createPoligon(coords: Point[], color = '#00FF0088') {
@@ -412,62 +260,41 @@ function createPoligon(coords: Point[], color = '#00FF0088') {
   }
 
   return new ymaps.Polygon([
-    // Указываем координаты вершин многоугольника.
-    // Координаты вершин внешнего контура.
     [
       ...coords
     ],
-    // Координаты вершин внутреннего контура.
-    // [
-    //     [55.75, 37.52],
-    //     [55.75, 37.68],
-    //     [55.65, 37.60]
-    // ]
   ], {
-      // Описываем свойства геообъекта.
-      // Содержимое балуна.
-      hintContent: "Многоугольник"
+    hintContent: "Многоугольник"
   }, {
-      // Задаем опции геообъекта.
-      // Цвет заливки.
-      fillColor: color,
-      // Ширина обводки.
-      strokeColor: color.slice(0, -2),
-      strokeWidth: 1
+    fillColor: color,
+    strokeColor: color.slice(0, -2),
+    strokeWidth: 1
   });
 }
-
 
 const createPlacemark = (coords: Point) => {
   return new (ymaps.Placemark as any)(coords, {
       iconCaption: 'поиск...',
   }, {
-      // preset: 'islands#violetDotIconWithCaption',
       draggable: true,
       pane: 'islands#violetDotIconWithCaption'
   });
 }
 
 function getStartCoords(coords: Point, map: ymaps.Map) {
-  if (!test) {   // comment this if for test
+  if (!test) {
     if (countOfRequest > 58) {
       return;
     }
   }
-
 
   getWeather(coords[0], coords[1])
     .then( (request1: OpenWeatherMap) => {
 
       countOfRequest += 1;
 
-      // weather = makeFormat(request);
-      // Map.balloon.open(coords, {
-      //   contentHeader: weather.temperature
-      // });
-
-      const concInStartPosition: number = +(document.getElementById('concentrat') as HTMLInputElement).value
-      const cofSpeedSpreadF: number = +(document.getElementById('cofSpeedSpread') as HTMLInputElement).value
+      const concInStartPosition: number = +(getById('concentrat') as HTMLInputElement).value
+      const cofSpeedSpreadF: number = +(getById('cofSpeedSpread') as HTMLInputElement).value
 
       coordsAndWinds1.push({
         coords: coords,
@@ -482,9 +309,6 @@ function getStartCoords(coords: Point, map: ymaps.Map) {
 
       const ressss = getTwoPoints(request1.wind.deg, request1.wind.speed, coords, map, (r) => (r - 10), (r) => (r + 10));
 
-      const conc1 = 4;
-      const conc2 = 4;
-
       coordsAndWinds1.push({
         coords: ressss[0],
         deg: request1.wind.deg,
@@ -495,14 +319,9 @@ function getStartCoords(coords: Point, map: ymaps.Map) {
         deg: request1.wind.deg,
         conc: calculateConc(coordsAndWinds2, ressss[1], concInStartPosition, request1.wind.speed, cofSpeedSpreadF)
       });
-      // const nyPlacemark = createPlacemark(ressss[0]);
-      // map.geoObjects.add(nyPlacemark);
 
-      // const nyPlacemark2 = createPlacemark(ressss[1]);
-      // map.geoObjects.add(nyPlacemark2);
-
-      getPromiseWeather(coordsAndWinds1, [ressss[0][0] ,ressss[0][1]], map, arrayForControllingCount, (r) => (r - 10), concInStartPosition, cofSpeedSpreadF);
-      getPromiseWeather(coordsAndWinds2, [ressss[1][0] ,ressss[1][1]], map, arrayForControllingCount, (r) => (r + 10), concInStartPosition, cofSpeedSpreadF);
+      getPromiseWeather(coordsAndWinds1, [ressss[0][0], ressss[0][1]], map, arrayForControllingCount, (r) => (r - 10), concInStartPosition, cofSpeedSpreadF);
+      getPromiseWeather(coordsAndWinds2, [ressss[1][0], ressss[1][1]], map, arrayForControllingCount, (r) => (r + 10), concInStartPosition, cofSpeedSpreadF);
     });
 }
 
@@ -525,8 +344,6 @@ function getPromiseWeather(array: CoordArrayItem[], [lat, lon]: Point, map, cont
   }
 
   countOfRequest++;
-
-
 
   return getWeather(lat, lon)
     .then(request => {
@@ -555,43 +372,40 @@ function calculateConc(array: CoordArrayItem[], currentPoint: Point, concInStart
 
   const xM = ((5 - cofSpeedSpreadF) / 4) * d * 2;
 
-  // console.log(distanceFromStart);
-
   let s = 1;
 
   let cofX = distanceFromStart / xM;
 
   if (cofX <= 1) {
-    s = (3 * Math.pow(cofX, 4)) - (8 * Math.pow(cofX, 3)) + (6 * Math.pow(cofX, 2))
+    s = (3 * pow(cofX, 4)) - (8 * pow(cofX, 3)) + (6 * pow(cofX, 2))
   } else if (cofX > 1 && cofX <= 8) {
-    s = 1.13 / ((0.13 * Math.pow(cofX, 2)) + 1);
+    s = 1.13 / ((0.13 * pow(cofX, 2)) + 1);
   } else if (cofX > 8) {
     if (cofSpeedSpreadF <= 1.5) {
-      s = cofX / ((3.58 * Math.pow(cofX, 2)) - (35.2 * cofX) + 120);
+      s = cofX / ((3.58 * pow(cofX, 2)) - (35.2 * cofX) + 120);
     } else if (cofSpeedSpreadF > 1.5) {
-      s = 1 / ((0.1 * Math.pow(cofX, 2)) + (2.47 * cofX) - 17.8);
+      s = 1 / ((0.1 * pow(cofX, 2)) + (2.47 * cofX) - 17.8);
     }
   }
-
-  // console.log(concInStartPosition * s);
 
   return concInStartPosition * s;
 }
 
 function createPolygons(map: ymaps.Map, distance: number) {
-  if (arrayForControllingCount.length === 2) { // hard
+  if (arrayForControllingCount.length === 2) {
     coordsAndWinds1.forEach((item, index, array) => {
       if (index === 0 || !coordsAndWinds2[index] || !coordsAndWinds1[index]) {
         return;
       } else {
-        // console.log(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc);
-        const polygon = createStepConusPoligon(
-          coordsAndWinds1[index - 1].coords,
-          coordsAndWinds2[index - 1].coords,
-          coordsAndWinds1[index].coords,
-          coordsAndWinds2[index].coords,
+        const polygon = createPoligon(
+          [
+            coordsAndWinds1[index - 1].coords, // 1
+            coordsAndWinds1[index].coords, // 3
+            coordsAndWinds2[index].coords, // 4
+            coordsAndWinds2[index - 1].coords // 2
+          ],
           getColor(Math.max(coordsAndWinds2[index].conc, coordsAndWinds1[index].conc))
-        ); // colors[index]
+        );
 
         map.geoObjects.add(polygon);
       }
@@ -605,10 +419,6 @@ function createPolygons(map: ymaps.Map, distance: number) {
 
         const coordsOfCenter: Point = [ (coordsOfPoint1[0] + coordsOfPoint2[0]) / 2, (coordsOfPoint1[1] + coordsOfPoint2[1]) / 2 ];
 
-        // map.balloon.open(coordsOfCenter, {
-        //   contentHeader: '1111111'
-        // });
-
         const angle = ((angleOfPoint1 - 10) + (angleOfPoint2 + 10)) / 2
 
         const endPoint: Point = (ymaps as any).coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 2).endPoint;
@@ -619,10 +429,10 @@ function createPolygons(map: ymaps.Map, distance: number) {
       }
     });
 
-    arrayForControllingCount = []; // hard
+    arrayForControllingCount = [];
 
-    coordsAndWinds1 = []; // hard
-    coordsAndWinds2 = []; // hard
+    coordsAndWinds1 = [];
+    coordsAndWinds2 = [];
   }
 }
 
@@ -678,7 +488,7 @@ function getPointOnSegment(firstPoint: Point, secondPoint: Point, distanceFromPo
 
   const Rac = distanceFromPoint;
 
-  const Rab = Math.sqrt( Math.pow((Xb-Xa), 2) + Math.pow((Yb-Ya),2));
+  const Rab = Math.sqrt( pow((Xb-Xa), 2) + pow((Yb-Ya),2));
   const k = Rac / Rab;
   const Xc = Xa + (Xb-Xa)*k;
   const Yc = Ya + (Yb-Ya)*k;
