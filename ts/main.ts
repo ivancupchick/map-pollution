@@ -12,6 +12,20 @@ function getById(id: string): HTMLInputElement | HTMLElement {
   return result ? result : null;
 }
 
+function getPointOnDistance(startPoint: Point, direction: number, distance: number): Point {
+  const result = (ymaps as any).coordSystem.geo.solveDirectProblem(startPoint, getVectorForAngle(direction), distance);
+  return result ? result.endPoint : null;
+}
+
+function getVectorForAngle(angle: number): [number, number] {
+  const az1 = angle * Math.PI / 180;
+  return [Math.sin(az1), Math.cos(az1)];
+}
+
+function check(value: string | number): number {
+  return typeof value === 'string' ? +value : value;
+}
+
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 
 const colors = [
@@ -119,30 +133,11 @@ function setTime() {
 
 ymaps.ready(init);
 
-let coordsAndWinds1: CoordArrayItem[] = [
-  // {
-  //   coords: [0, 0],
-  //   wind: {
-  //     deg: 0,
-  //     speed: 0
-  //   }
-  // }
-];
+let coordsAndWinds1: CoordArrayItem[] = [];
+let coordsAndWinds2: CoordArrayItem[] = [];
 
-let coordsAndWinds2: CoordArrayItem[] = [
-  // {
-  // coords: [0, 0],
-  // wind: {
-  //   deg: 0,
-  //   speed: 0
-  // }
-// }
-];
-
-
-
-let coords2 = false;
 let coords1 = false;
+let coords2 = false;
 
 let arrayForControllingCount: boolean[] = [];
 
@@ -173,7 +168,6 @@ function init() {
     zoom: 6,
     type: "yandex#map"
   });
-
 
   map.events.add('click', (e) => {
     e = e as ymaps.IEvent;
@@ -228,30 +222,18 @@ function init() {
 function getTwoPoints(deg: number, speed: number, coords: Point, map: ymaps.Map, processer1: (value: number) => number, processer2: (value: number) => number): [Point, Point] {
   let distance = speed * 15 * 60;
 
-  let rereerer1 = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer1(deg)), distance);
-  let rereerer2 = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer2(deg)), distance);
+  let rereerer1 = getPointOnDistance(coords, processer1(deg), distance);
+  let rereerer2 = getPointOnDistance(coords, processer2(deg), distance);
 
-  return rereerer1 && rereerer2 ? [rereerer1.endPoint, rereerer2.endPoint] : [null, null];
+  return rereerer1 && rereerer2 ? [rereerer1, rereerer2] : [null, null];
 }
 
 function getOnePoints(deg: number, speed: number, coords: Point, map: ymaps.Map, processer: (r: number) => number): Point {
-  let turn = deg;
   let distance = speed * 15 * 60;
 
-  const rrrrrrrrrr = getVectorForAngle(processer(turn));
+  let rereerer1 = getPointOnDistance(coords, processer(deg), distance);
 
-  let rereerer1: { endPoint: Point } = (ymaps as any).coordSystem.geo.solveDirectProblem(coords, [rrrrrrrrrr[0], rrrrrrrrrr[1]], distance);
-
-  return rereerer1.endPoint;
-}
-
-function getVectorForAngle(angle: number): [number, number] {
-  const az1 = angle * Math.PI / 180;
-  return [Math.sin(az1), Math.cos(az1)];
-}
-
-function check(value: string | number): number {
-  return typeof value === 'string' ? +value : value;
+  return rereerer1;
 }
 
 function createPoligon(coords: Point[], color = '#00FF0088') {
@@ -363,32 +345,32 @@ function calculateConc(array: CoordArrayItem[], currentPoint: Point, concInStart
 
   let d: number;
   if (windSpeed <= 0.5) {
-    d = 5.7;
+    d = 5.7; // 4.15а
   } else if (windSpeed <= 2 && windSpeed > 0.5) {
-    d = 11.4 * windSpeed;
+    d = 11.4 * windSpeed;  // 4.15б
   } else if (windSpeed > 2) {
-    d = 16 * Math.sqrt(windSpeed);
+    d = 16 * Math.sqrt(windSpeed);  // 4.15в
   }
 
-  const xM = ((5 - cofSpeedSpreadF) / 4) * d * 2;
+  const xM = ((5 - cofSpeedSpreadF) / 4) * d * 2; // 4.13
 
   let s = 1;
 
-  let cofX = distanceFromStart / xM;
+  let cofX = distanceFromStart / xM; // X/Xm
 
   if (cofX <= 1) {
-    s = (3 * pow(cofX, 4)) - (8 * pow(cofX, 3)) + (6 * pow(cofX, 2))
+    s = (3 * pow(cofX, 4)) - (8 * pow(cofX, 3)) + (6 * pow(cofX, 2)) // 4.19а
   } else if (cofX > 1 && cofX <= 8) {
-    s = 1.13 / ((0.13 * pow(cofX, 2)) + 1);
+    s = 1.13 / ((0.13 * pow(cofX, 2)) + 1); // 4.19б
   } else if (cofX > 8) {
     if (cofSpeedSpreadF <= 1.5) {
-      s = cofX / ((3.58 * pow(cofX, 2)) - (35.2 * cofX) + 120);
+      s = cofX / ((3.58 * pow(cofX, 2)) - (35.2 * cofX) + 120); // 4.19в
     } else if (cofSpeedSpreadF > 1.5) {
-      s = 1 / ((0.1 * pow(cofX, 2)) + (2.47 * cofX) - 17.8);
+      s = 1 / ((0.1 * pow(cofX, 2)) + (2.47 * cofX) - 17.8); // 4.19г
     }
   }
 
-  return concInStartPosition * s;
+  return concInStartPosition * s; // 4.18
 }
 
 function createPolygons(map: ymaps.Map, distance: number) {
@@ -421,7 +403,7 @@ function createPolygons(map: ymaps.Map, distance: number) {
 
         const angle = ((angleOfPoint1 - 10) + (angleOfPoint2 + 10)) / 2
 
-        const endPoint: Point = (ymaps as any).coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 2).endPoint;
+        const endPoint: Point = getPointOnDistance(coordsOfCenter, angle, distance / 2);
 
         const polygon = getFinalPolygon(coordsOfPoint1, coordsOfPoint2, endPoint, index);
 

@@ -1,10 +1,20 @@
-let test = false;
+let test = true;
 function pow(x, y) {
     return Math.pow(x, y);
 }
 function getById(id) {
     const result = document.getElementById(id);
     return result ? result : null;
+}
+function solveDirectProblem(startPoint, direction, distance) {
+    return ymaps.coordSystem.geo.solveDirectProblem(startPoint, getVectorForAngle(direction), distance);
+}
+function getVectorForAngle(angle) {
+    const az1 = angle * Math.PI / 180;
+    return [Math.sin(az1), Math.cos(az1)];
+}
+function check(value) {
+    return typeof value === 'string' ? +value : value;
 }
 const API_KEY = 'a2266dd2d09145f3da82a4194a6b4b14';
 const colors = [
@@ -58,8 +68,8 @@ function setTime() {
 ymaps.ready(init);
 let coordsAndWinds1 = [];
 let coordsAndWinds2 = [];
-let coords2 = false;
 let coords1 = false;
+let coords2 = false;
 let arrayForControllingCount = [];
 let myPlacemark;
 function clearMap(map, placemark) {
@@ -116,23 +126,14 @@ function init() {
 }
 function getTwoPoints(deg, speed, coords, map, processer1, processer2) {
     let distance = speed * 15 * 60;
-    let rereerer1 = ymaps.coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer1(deg)), distance);
-    let rereerer2 = ymaps.coordSystem.geo.solveDirectProblem(coords, getVectorForAngle(processer2(deg)), distance);
+    let rereerer1 = solveDirectProblem(coords, processer1(deg), distance);
+    let rereerer2 = solveDirectProblem(coords, processer2(deg), distance);
     return rereerer1 && rereerer2 ? [rereerer1.endPoint, rereerer2.endPoint] : [null, null];
 }
 function getOnePoints(deg, speed, coords, map, processer) {
-    let turn = deg;
     let distance = speed * 15 * 60;
-    const rrrrrrrrrr = getVectorForAngle(processer(turn));
-    let rereerer1 = ymaps.coordSystem.geo.solveDirectProblem(coords, [rrrrrrrrrr[0], rrrrrrrrrr[1]], distance);
+    let rereerer1 = solveDirectProblem(coords, processer(deg), distance);
     return rereerer1.endPoint;
-}
-function getVectorForAngle(angle) {
-    const az1 = angle * Math.PI / 180;
-    return [Math.sin(az1), Math.cos(az1)];
-}
-function check(value) {
-    return typeof value === 'string' ? +value : value;
 }
 function createPoligon(coords, color = '#00FF0088') {
     if (color.length < 9) {
@@ -272,7 +273,7 @@ function createPolygons(map, distance) {
                 const angleOfPoint2 = coordsAndWinds2[index].deg;
                 const coordsOfCenter = [(coordsOfPoint1[0] + coordsOfPoint2[0]) / 2, (coordsOfPoint1[1] + coordsOfPoint2[1]) / 2];
                 const angle = ((angleOfPoint1 - 10) + (angleOfPoint2 + 10)) / 2;
-                const endPoint = ymaps.coordSystem.geo.solveDirectProblem(coordsOfCenter, getVectorForAngle(angle), distance / 2).endPoint;
+                const endPoint = solveDirectProblem(coordsOfCenter, angle, distance / 2).endPoint;
                 const polygon = getFinalPolygon(coordsOfPoint1, coordsOfPoint2, endPoint, index);
                 map.geoObjects.add(polygon);
             }
